@@ -1,0 +1,203 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Jeu montagne enneigée</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        width: 1280*2,
+        height: 700*2,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 200, },
+                debug: false
+            }
+        },
+        
+        input : {gamepad:true},
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+    
+    var platforms;
+    
+    //Commande
+    var cursors;
+    var cursors2;
+    var paddle;
+    var padConnected;
+    
+    var game = new Phaser.Game(config);
+        
+
+
+    
+    function preload (){
+        
+        this.load.image('sky', 'assets/landscape.png');
+        this.load.image('ground', 'assets/platform.png');
+        this.load.image("mia", "assets/teste.png");
+        this.load.image("mia_course", "assets/teste_2.png");
+        this.load.image("clouds-white", "assets/clouds-white.png");
+        this.load.image("clouds-white-small", "assets/clouds-white-small.png");
+        this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+    }
+
+    function create (){
+        
+
+
+        // background        
+        this.add.image(960, 300, 'sky');
+        this.add.image(960*2, 300, 'sky');
+        this.add.image(100, 400, 'mia');
+        this.add.image(100, 200, 'mia_course');
+        // nuage
+        cloudsWhite = this.add.tileSprite(640, 200, 1280, 400, "clouds-white");
+        cloudsWhiteSmall = this.add.tileSprite(640, 200, 1280, 400, "clouds-white-small");
+        
+        // platforms
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
+        platforms.create(600, 400, 'ground');
+        platforms.create(50, 250, 'ground');
+        platforms.create(750, 220, 'ground');
+        
+        // caratéristique joueur
+
+        this.player = this.physics.add.sprite(100, 400, 'dude');
+        player = this.player
+        
+        player.setBounce(0.01);
+        player.setCollideWorldBounds(true);
+        this.physics.add.collider(player, platforms);
+        
+        // anime joueur
+        this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'turn',
+            frames: [ { key: 'dude', frame: 4 } ],
+            frameRate: 20
+        });
+
+        this.anims.create({
+            key: 'right',
+            frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        
+        // controle
+        cursors = this.input.keyboard.createCursorKeys();
+        cursors2 = this.input.keyboard.addKeys('Z,Q,S,D,SPACE'); 
+        
+        //camera
+
+        this.cameras.main.setBounds(0,100, 1280*3, 700*3);
+        this.cameras.main.startFollow(this.player, true,);
+        this.cameras.main.setZoom(1.2);
+
+    }
+
+    function update (){
+        // anime nuage
+        cloudsWhite.tilePositionX += 0.25;
+        cloudsWhiteSmall.tilePositionX += 0.10;
+        
+        //controle clavier
+        if (cursors.left.isDown || cursors2.Q.isDown)
+        {
+            player.setVelocityX(-160);
+
+            player.anims.play('left', true);
+        }
+        else if (cursors.right.isDown || cursors2.D.isDown)
+        {
+            player.setVelocityX(160);
+
+            player.anims.play('right', true);
+        }
+        else if (cursors.down.isDown || cursors2.S.isDown){//direction vers le bas
+            player.setVelocityY(330);
+        }
+        else //position neutre
+        {
+            player.setVelocityX(0);
+
+            player.anims.play('turn');
+        }
+        
+
+                //saut
+        if (cursors.up.isDown && player.body.touching.down || cursors2.Z.isDown && player.body.touching.down || cursors2.SPACE.isDown && player.body.touching.down)
+        {
+            player.setVelocityY(-330);
+         }
+        
+        // controle pad
+        this.input.gamepad.once('connected', function (pad) {
+            paddle = pad;
+            padConnected = true;
+        });
+        
+        if (padConnected) {
+                        
+           if (paddle.left || cursors.left.isDown || cursors2.Q.isDown){
+                player.setVelocityX(-160);
+
+                player.anims.play('left', true);
+            }
+                
+           else if (paddle.right || cursors.right.isDown || cursors2.D.isDown){
+               
+                player.setVelocityX(160);
+
+                player.anims.play('right', true);
+            }
+
+            else{
+                
+                player.setVelocityX(0);
+
+                player.anims.play('turn');
+            } 
+                
+            if (paddle.B || cursors.down.isDown || cursors2.S.isDown){
+                
+                player.setVelocityY(330);
+                
+            }
+            if (paddle.A && player.body.touching.down || cursors.up.isDown && player.body.touching.down || cursors2.Z.isDown && player.body.touching.down || cursors2.SPACE.isDown && player.body.touching.down){
+                
+                player.setVelocityY(-330);
+            }
+        }
+    }
+
+</script>
+
+</body>
+</html>
