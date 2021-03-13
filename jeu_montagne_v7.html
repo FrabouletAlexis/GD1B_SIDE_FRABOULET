@@ -1,0 +1,609 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Jeu montagne enneigée</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+    type: Phaser.AUTO,
+    width: 1280,
+    height: 700,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 400 },
+            debug: true
+        }
+    },
+    
+    input : {gamepad:true},
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+    
+var platforms;
+    
+//Commande
+var cursors;
+var cursors2;
+var paddle;
+var padConnected;
+var onGround ;
+    
+var position_base = true;
+var saut = false;
+    
+// platform
+var glace = false;
+var neige = false;
+var roche = true;
+var escalade_gauche = false;
+var escalade_droite = false;
+
+var pique_bas = false;
+var pique_haut = false;
+var gouffre = false;
+    
+//vie
+var pv_max = 3;
+var pv = 1;
+var coeur;
+var pvText;
+// vitesse joueur/////////////////
+var vitesse_joueur = 330;
+var vitesse_neige = 150;
+var vitesse_glace = 200;
+var vitesse_escalade = 300;
+var vitesse_saut = 600;
+    
+    
+var gameOver = false;
+var gameOvertext;
+    
+var escalade_joueur = false;
+var gravite_joueur = 600;
+
+
+//var collectCoeur = false;    
+var coeurX = 80;
+var coeurY = 80;
+    
+var game = new Phaser.Game(config);
+         
+function preload (){
+        
+    this.load.image('sky', 'assets/landscape.png');
+    this.load.image('ground', 'assets/platform.png');
+    this.load.image('platform_neige', 'assets/platform_neige.png');
+    this.load.image('platform_glace', 'assets/platform_glace.png');
+    this.load.image('platform_escalade', 'assets/mur_escalade.png');
+    this.load.image('platform_pique', 'assets/pique.png');
+    
+    this.load.image("loup", "assets/loup.png");
+    this.load.image("mia_course", "assets/teste_2.png");
+    this.load.spritesheet('mia_anime', 'assets/mia_course.png', { frameWidth: 125, frameHeight: 150 });
+    this.load.spritesheet('loup_anims', 'assets/loup_anims.png', { frameWidth: 138, frameHeight: 70 });
+    this.load.spritesheet('mia_pose', 'assets/mia_pose.png', { frameWidth: 99/2, frameHeight: 150 });
+        
+    this.load.image("coeur","assets/star.png");
+    this.load.image("coeur_perdu","assets/coeur_perdu.png");
+    this.load.image("coeur_aquit","assets/coeur_aquit.png");
+    
+    this.load.image("clouds-white", "assets/clouds-white.png");
+    this.load.image("clouds-white-small", "assets/clouds-white-small.png");
+}
+
+function create (){
+        
+
+
+    // background /////////////////////
+    
+    this.add.image(1280, 700, 'sky');
+    this.add.image(960*2, 300, 'sky');
+        
+    // nuage /////////////////////
+    
+    cloudsWhite = this.add.tileSprite(640, 200, 1280, 400, "clouds-white");
+    cloudsWhiteSmall = this.add.tileSprite(640, 200, 1280, 400, "clouds-white-small");
+                
+    // platforms /////////////////////
+    
+    platforms = this.physics.add.staticGroup();
+    platforms_glace = this.physics.add.staticGroup();
+    platforms_neige = this.physics.add.staticGroup();
+    platforms_escalade_gauche = this.physics.add.staticGroup();
+    platforms_escalade_droite = this.physics.add.staticGroup();
+    
+    pique_haut = this.physics.add.staticGroup();
+    pique_bas = this.physics.add.staticGroup();
+    gouffre = this.physics.add.staticGroup();
+    
+    platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+    
+    platforms.create(505, 200, 'ground');
+    platforms.create(10, 200, 'ground');
+    
+    platforms_glace.create(1000,568, 'platform_glace');
+   // platforms_neige.create(500,516, 'platform_neige');
+//    platforms_neige.create(500,200, 'platform_neige');
+    
+    platforms_escalade_droite.create(350,400,'platform_escalade');
+    platforms_escalade_gauche.create(670,400,'platform_escalade');
+    
+    //pique_bas.create(1000,500, 'platform_pique');
+    pique_haut.create(10,250, 'platform_pique');
+    //gouffre.create(1000,400, 'platform_pique');
+    
+    //platforms.create(600, 400, 'ground');
+    //platforms.create(50, 250, 'ground');
+    //platforms.create(750, 220, 'ground');
+        
+    // Caratéristique joueur /////////////////////
+
+    this.player = this.physics.add.sprite(100, 400, 'mia_pose');
+    player = this.player
+    player.body.setGravityY(gravite_joueur)
+    
+    
+    player.setBounce(0.01);
+    player.setCollideWorldBounds(true);
+    this.physics.add.collider(player, platforms,verif_roche);
+    this.physics.add.collider(player, platforms_glace, verif_glace);
+    this.physics.add.collider(player, platforms_escalade_droite, verif_escalade_droite);
+    this.physics.add.collider(player, platforms_escalade_gauche, verif_escalade_gauche);
+    
+    this.physics.add.overlap(player, platforms_neige, verif_neige);
+    this.physics.add.overlap(player, gouffre,verif_gouffre);
+    this.physics.add.overlap(player, pique_bas,verif_pique_bas);
+    this.physics.add.overlap(player, pique_haut,verif_pique_haut);
+    
+    // anime joueur /////////////////////
+    this.anims.create({
+        key: 'course',
+        frames: this.anims.generateFrameNumbers('mia_anime', { start: 0, end: 15 }),
+        frameRate: 30,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'neutre',
+        frames: [ { key: 'mia_pose', frame: 2 } ],
+        frameRate: 10,
+    });
+        
+    this.anims.create({
+        key: 'saut',
+        frames: this.anims.generateFrameNumbers('mia_anime', { start: 17, end: 20 }),
+        frameRate: 30,
+        repeat: -1
+    });
+    
+    this.anims.create({
+        key: 'escalade',
+        frames: this.anims.generateFrameNumbers('mia_anime', { start: 21, end: 35 }),
+        frameRate: 30,
+        repeat: -1
+    });
+    
+    // anime enemie//////////////////
+    this.anims.create({
+        key: 'loup',
+        frames: this.anims.generateFrameNumbers('loup_anims', { start: 0, end: 14 }),
+        frameRate: 30,
+        repeat: -1
+    });
+    
+    loup = this.physics.add.group({
+        key: 'loup_anims',
+        repeat: 1,
+        setXY: { x: 300, y: 0}
+    });
+
+    // controle /////////////////////
+    cursors = this.input.keyboard.createCursorKeys();
+    cursors2 = this.input.keyboard.addKeys('Z,Q,S,D,SPACE'); 
+        
+    //camera /////////////////////
+    cam = this.cameras.main.startFollow(player);
+    cam.setZoom(1.2);
+        
+    //item /////////////////////
+    
+    affiche_coeur_aquit_1 = this.physics.add.staticGroup({
+        key:'coeur_aquit',
+        repeat:1,
+        setXY: { x:coeurX, y:coeurY}
+    });
+    affiche_coeur_aquit_2 = this.physics.add.staticGroup({
+        key:'coeur_aquit',
+        repeat:1,
+        setXY: { x:coeurX+50, y:coeurY}
+    });
+    affiche_coeur_aquit_3 = this.physics.add.staticGroup({
+        key:'coeur_aquit',
+        repeat:1,
+        setXY: { x:coeurX+100, y:coeurY}
+    });
+    
+    this.add.image(130, 80, 'coeur_perdu');
+    this.add.image(180, 80, 'coeur_perdu');
+    
+    coeur = this.physics.add.group({
+        key: 'coeur',
+        repeat: 1,
+        setXY: { x: 300, y: 0}
+    });
+        
+    this.physics.add.collider(coeur, platforms);
+    this.physics.add.overlap(player, coeur, collectCoeur,afficheCoeur, null, this);
+    pvText = this.add.text(16, 16, 'Pv: ' + pv, { fontSize: '32px', fill: '#000' });
+
+}
+
+function update (){
+    
+    onGround = player.body.blocked.down;
+    
+    // anime nuage /////////////////////
+    cloudsWhite.tilePositionX += 0.25;
+    cloudsWhiteSmall.tilePositionX += 0.10;
+    
+
+    //controle clavier/////////////////////
+    
+    if (cursors.left.isDown || cursors2.Q.isDown)
+    {   
+        position_base = false;
+        escalade_gauche = true;
+        
+        if (glace == true){
+            
+            player.body.acceleration.setToPolar(player.rotation, -vitesse_glace,10);
+            //player.anims.play('left', true);
+        }
+        else if (roche == true) {
+            player.body.acceleration.setToPolar(player.rotation, -0);
+            player.setVelocityX(-vitesse_joueur);
+            //player.anims.play('left', true);
+        }
+        
+        else if (neige == true) {
+            player.setVelocityX(-vitesse_neige);
+            //player.anims.play('left', true);
+        }
+        
+        else if (escalade_joueur_gauche == true){
+                
+                player.setVelocityY(-vitesse_escalade);
+                player.setVelocityX(-vitesse_escalade);
+                //player.anims.play('saut_gauche');
+        }
+
+
+        
+    }
+    else if (cursors.right.isDown || cursors2.D.isDown)
+    {
+        position_base = true;
+        escalade_gauche = false;
+        
+        if (glace == true){
+            
+            player.body.acceleration.setToPolar(player.rotation, vitesse_glace,10);
+            //player.anims.play('right', true);
+        }
+        else if (roche == true) {
+            player.body.acceleration.setToPolar(player.rotation, 0);
+            player.setVelocityX(vitesse_joueur);
+            //player.anims.play('right', true);
+        }
+        
+        else if (neige == true) {
+            player.setVelocityX(vitesse_neige);
+            //player.anims.play('right', true);
+        }  
+        
+        else if (escalade_joueur_droite == true){
+                
+                player.setVelocityY(-vitesse_escalade);
+                player.setVelocityX(vitesse_escalade);
+                //player.anims.play('saut_droite');
+        }
+        
+        
+    }
+    else if (cursors.down.isDown || cursors2.S.isDown){//direction vers le bas /////////////////////
+        player.body.allowGravity = true;
+        player.setVelocityY(330);
+    }
+    
+    else //position neutre /////////////////////
+    {
+        if(position_base == true){
+            if (escalade_joueur == true){
+                
+                player.setVelocityX(0);
+
+            }
+            else {
+                player.setVelocityX(0);
+
+
+            }
+        }
+        else if(position_base == false){
+                
+            if (escalade_joueur == true){
+                player.setVelocityX(0);
+
+            }
+            else {
+                player.setVelocityX(0);
+
+            }
+        }
+
+    }
+        
+
+            //saut /////////////////////
+    if (cursors.up.isDown && player.body.touching.down || cursors2.Z.isDown && player.body.touching.down || cursors2.SPACE.isDown && player.body.touching.down)
+    {
+        saut = true;
+        player.setVelocityY(-vitesse_saut);
+
+     }
+    
+    // controle pad /////////////////////
+    
+    this.input.gamepad.once('connected', function (pad) {
+        paddle = pad;
+        padConnected = true;
+    });    
+    
+    if (padConnected) {
+                        
+       if (paddle.left || cursors.left.isDown || cursors2.Q.isDown){
+            position_base = false;
+            escalade_gauche = true;
+        
+            if (glace == true){
+            
+                player.body.acceleration.setToPolar(player.rotation, -200);
+                //player.anims.play('left', true);
+            }
+            else if (roche == true) {
+                player.body.acceleration.setToPolar(player.rotation, -0);
+                player.setVelocityX(-300);
+                //player.anims.play('left', true);
+            }
+
+            else if (neige == true) {
+                player.setVelocityX(-150);
+                //player.anims.play('left', true);
+            }
+
+            else if (escalade_joueur_gauche == true){
+
+                    player.setVelocityY(-300);
+                    player.setVelocityX(-300);
+                    //player.anims.play('saut_gauche');
+            }
+
+        }
+                
+       else if (paddle.right || cursors.right.isDown || cursors2.D.isDown){
+               
+            player.setVelocityX(160);
+
+        }
+
+        else{
+                
+            player.setVelocityX(0);
+
+        } 
+            
+        if (paddle.B || cursors.down.isDown || cursors2.S.isDown){
+                
+            player.setVelocityY(330);
+                
+        }
+        if (paddle.A && player.body.touching.down || cursors.up.isDown && player.body.touching.down || cursors2.Z.isDown && player.body.touching.down || cursors2.SPACE.isDown && player.body.touching.down){
+                
+             player.setVelocityY(-330);
+        }
+    }
+    
+    if (onGround) {
+        if (player.body.velocity.x < 0){
+            
+            player.anims.play('course', true);
+            player.setFlipX(false);
+        }
+        else if (position_base == false){
+            
+            player.anims.play('neutre', true);
+            player.setFlipX(false);
+        }
+        else if (player.body.velocity.x > 0){
+            
+            player.anims.play('course', true);
+            player.setFlipX(true);
+        } 
+        else if (position_base == true){
+            
+            player.anims.play('neutre', true);
+            player.setFlipX(true);
+        }
+        
+    }
+    else {
+        if (position_base == true){
+            
+            player.anims.play('saut');
+            player.setFlipX(true);
+        }
+        else if(position_base == false){
+            
+            player.anims.play('saut');
+            player.setFlipX(false);
+
+        }
+        
+    }
+    
+    if (gameOver){
+        
+        gameOvertext = this.add.text(250, 300, 'Game over', { fontSize: '32px', fill: '#000' });
+        
+        if (pique_bas == true) {
+            player.setVelocityY(600);
+            player.setVelocityX(0);
+            
+            player.anims.play('right', true);
+        }
+        else if (pique_haut == true) {
+            player.setVelocityY(-600);
+            player.setVelocityX(0);
+            
+            player.anims.play('saut_droite');
+            
+        }
+        else if (gouffre == true) {
+
+            player.setVelocityX(0);
+            player.anims.play('saut_gauche');
+        }
+    }
+    
+}
+
+function verif_glace (player)
+{
+    glace = true;
+    neige = false;
+    roche = false;
+    escalade_joueur_gauche = false;
+    escalade_joueur_droite = false;
+    player.body.allowGravity = true;
+    
+    pvText.setText('  glace ' + pv);
+}
+
+function verif_neige (player)
+{
+    glace = false;
+    neige = true;
+    roche = false;
+    escalade_joueur_gauche = false;
+    escalade_joueur_droite = false;
+    player.body.allowGravity = true;
+    
+    pvText.setText('  neige ' + pv);
+}
+
+function verif_roche (player)
+{
+    glace = false;
+    neige = false;
+    roche = true;
+    escalade_joueur_gauche = false;
+    escalade_joueur_droite = false;
+    player.body.allowGravity = true;
+    
+    pvText.setText('  roche ' + pv);
+}
+    
+function verif_escalade_gauche (player)
+{
+    glace = false;
+    neige = false;
+    roche = false;
+    escalade_joueur_gauche = true;
+    escalade_joueur_droite = false;
+    player.body.allowGravity = true;
+    
+    pvText.setText('  escalade ' + gravite_joueur);
+}
+
+function verif_escalade_droite (player)
+{
+    glace = false;
+    neige = false;
+    roche = false;
+    escalade_joueur_gauche = false;
+    escalade_joueur_droite = true;
+    player.body.allowGravity = true;
+        
+    pvText.setText('  escalade ' + gravite_joueur);
+}
+
+function verif_gouffre (player)
+{
+    
+    gouffre = true;
+    
+    //player.body.allowGravity = true;
+    gameOver = true;
+
+    
+}
+    
+function verif_pique_haut (player)
+{
+    pique_haut = true;
+    
+    //player.body.allowGravity = false;
+    gameOver = true;
+
+    
+}
+
+function verif_pique_bas (player)
+{
+    pique_bas = true;
+    
+    //player.body.allowGravity = true;
+    gameOver = true;
+
+    
+}
+
+function afficheCoeur (coeur_aquit_2,coeur_perdu,pv)
+{
+    if (pv == 1){
+        coeur_aquit_2.disableBody(true);
+    }
+}
+function collectCoeur (player, coeur)
+{
+    if (pv<pv_max){
+        //collectCoeur = true;
+        coeur.disableBody(true, true);
+        
+        // sinon il le compte deux fois
+        pv += 0.5;
+        pvText.setText('Pv: ' + pv);
+
+    }
+
+}
+</script>
+
+</body>
+</html>
