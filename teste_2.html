@@ -22,7 +22,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 400 },
-            debug: false
+            debug: true
         }
     },
     
@@ -76,6 +76,7 @@ var gameOver = false;
 var gameOvertext;
     
 var escalade_joueur = false;
+var piolet = true;
 var gravite_joueur = 600;
 
 
@@ -98,12 +99,13 @@ function preload (){
     this.load.spritesheet('mia_anime', 'assets/mia_anime.png', { frameWidth: 125, frameHeight: 150 });
     this.load.spritesheet('loup_anims', 'assets/loup_anims.png', { frameWidth: 138, frameHeight: 70 });
     this.load.spritesheet('mia_pose', 'assets/mia_pose.png', { frameWidth: 99/2, frameHeight: 150 });
+    this.load.spritesheet('mia_mort', 'assets/mia_mort.png', { frameWidth: 210, frameHeight: 150 });
     this.load.spritesheet('piolet', 'assets/piolet.png', { frameWidth: 64, frameHeight: 80 });
+    this.load.spritesheet('mia_mort', 'assets/mia_mort.png', { frameWidth: 64, frameHeight: 80 });
+    this.load.spritesheet('drapeau', 'assets/drapeau.png', { frameWidth: 320, frameHeight: 320 });
     
     this.load.image("particule","assets/particule.png");
     this.load.image("coeur","assets/batterie.png");
-    this.load.image("coeur_perdu","assets/coeur_perdu.png");
-    this.load.image("coeur_aquit","assets/coeur_aquit.png");
     
     this.load.image("clouds-white", "assets/clouds-white.png");
     this.load.image("clouds-white-small", "assets/clouds-white-small.png");
@@ -231,11 +233,53 @@ function create (){
     });
     
     this.anims.create({
+        key: 'degat',
+        frames: this.anims.generateFrameNumbers('mia_anime', { start: 48, end: 51 }),
+        frameRate: 20,
+        repeat: -1
+    });
+    
+    this.anims.create({
         key: 'mort_pique_haut',
         frames: this.anims.generateFrameNumbers('mia_anime', { start: 33, end: 44 }),
         frameRate: 8,
         repeat: -1
     });
+    
+    this.anims.create({
+        key: 'mort',
+        frames: this.anims.generateFrameNumbers('mia_mort', { start: 0, end: 11 }),
+        frameRate: 20,
+        repeat: -1
+    });
+    /////////////////////////////
+    // Drapeau//////////////////
+    ///////////////////////////
+    
+    this.anims.create({
+        key: 'drapeau',
+        frames: this.anims.generateFrameNumbers('drapeau', { start: 0, end: 5 }),
+        frameRate: 10,
+        repeat: -1
+    });
+    
+    this.drapeau = this.physics.add.group()
+    
+   /* drapeau.forEachTile(tile=>{
+        if(tile.index !== -1){
+            let vardrapeau
+            const x = tile.getCenterX()
+            const y = tile.getCenterY()
+            if (tile.properties.lampe === 'drapeau'){
+                vardrapeau = this.drapeau.create(x,y, 'coin')
+                vardrapeau.body.allowGravity = false;
+                vardrapeau.anims.play('drapeau',true)
+            }
+            vardrapeau.body.width = 16
+            vardrapeau.body.height = 16
+        }*/
+    
+    
     // anime Power-up//////////////////
     this.anims.create({
         key: 'piolet',
@@ -243,7 +287,10 @@ function create (){
         frameRate: 7,
         repeat: -1
     });
+    //////////////////////////////////
     // anime enemie//////////////////
+    ////////////////////////////////
+    
     this.anims.create({
         key: 'loup',
         frames: this.anims.generateFrameNumbers('loup_anims', { start: 0, end: 14 }),
@@ -251,13 +298,24 @@ function create (){
         repeat: -1
     });
     
-    loup = this.physics.add.group({
-        key: 'loup_anims',
-        repeat: 1,
-        setXY: { x: 300, y: 0}
+    enemieObjects = map.getObjectLayer('enemie').objects;
+    this.enemies = this.physics.add.group({
+         allowGravity: true
+     }); 
+    
+    for (const enemie of enemieObjects) {
 
-    });
-    this.physics.add.collider(loup, platforms);
+        this.enemies.create(enemie.x, enemie.y, 'loup_anims')
+            .setOrigin(0.5,0.5)
+            .setDepth(1)
+            .setScale(1)
+            .setGravityY(300)
+}
+    for (const enemie of this.enemies.children.entries) {
+        enemie.isDed = false;
+}  
+   this.physics.add.collider(player, this.enemies)
+   this.physics.add.collider(this.enemies, platforms,);
     
 
     // controle /////////////////////
@@ -612,6 +670,31 @@ function update (){
         }
     }
     
+    /////////////////////////////
+    // ennemie//////////////////
+    ///////////////////////////
+    
+    for (const enemie of this.enemies.children.entries) {
+        if (enemie.body.blocked.right) {
+            enemie.direction = 'LEFT';
+        }
+
+        if (enemie.body.blocked.left) {
+            enemie.direction = 'RIGHT';
+        }
+
+        if (enemie.direction === 'RIGHT') {
+            enemie.setVelocityX(100);
+            enemie.setFlipX(true);
+            enemie.anims.play("loup", true);
+        } else {
+            enemie.setVelocityX(-100);
+            enemie.setFlipX(false);
+            enemie.anims.play("loup", true);
+        }
+       
+    }
+    
 }
 
 function verif_glace (player)
@@ -651,7 +734,12 @@ function verif_escalade (player)
     glace = false;
     neige = false;
     roche = false;
-    escalade_joueur = true;
+    
+    if (piolet == true){
+
+        escalade_joueur = true;
+    }
+
 
         
 }
