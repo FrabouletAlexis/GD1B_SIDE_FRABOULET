@@ -57,7 +57,7 @@ var particule_escalade;
 var pique_bas = false;
 var pique_haut = false;
 var gouffre = false;
-    
+var fin = false;   
 //vie
 var pv_max = 3;
 var pv = 1;
@@ -89,23 +89,20 @@ var game = new Phaser.Game(config);
 function preload (){
         
     this.load.image('sky', 'assets/landscape.png');
-    this.load.image('ground', 'assets/platform.png');
-    this.load.image('platform_neige', 'assets/platform_neige.png');
-    this.load.image('platform_glace', 'assets/platform_glace.png');
-    this.load.image('platform_escalade', 'assets/mur_escalade.png');
-    this.load.image('platform_pique', 'assets/pique.png');
+
     
-    this.load.image("mia_course", "assets/teste_2.png");
-    this.load.spritesheet('mia_anime', 'assets/mia_anime.png', { frameWidth: 125, frameHeight: 150 });
-    this.load.spritesheet('loup_anims', 'assets/loup_anims.png', { frameWidth: 138, frameHeight: 70 });
-    this.load.spritesheet('mia_pose', 'assets/mia_pose.png', { frameWidth: 99/2, frameHeight: 150 });
-    this.load.spritesheet('mia_mort', 'assets/mia_mort.png', { frameWidth: 210, frameHeight: 150 });
-    this.load.spritesheet('piolet', 'assets/piolet.png', { frameWidth: 64, frameHeight: 80 });
-    this.load.spritesheet('mia_mort', 'assets/mia_mort.png', { frameWidth: 64, frameHeight: 80 });
-    this.load.spritesheet('drapeau', 'assets/drapeau.png', { frameWidth: 320, frameHeight: 320 });
+    this.load.image('bare_de_vie_1_pv', 'assets/barre_de_vie/bare_de_vie_1_pv.png');
     
-    this.load.image("particule","assets/particule.png");
-    this.load.image("coeur","assets/batterie.png");
+    this.load.spritesheet('mia_anime', 'assets/spritesheet/mia_anime.png', { frameWidth: 125, frameHeight: 150 });
+    this.load.spritesheet('loup_anims', 'assets/spritesheet/loup_anims.png', { frameWidth: 138, frameHeight: 70 });
+    this.load.spritesheet('mia_pose', 'assets/spritesheet/mia_pose.png', { frameWidth: 99/2, frameHeight: 150 });
+    this.load.spritesheet('mia_mort', 'assets/spritesheet/mia_mort.png', { frameWidth: 210, frameHeight: 150 });
+    this.load.spritesheet('piolet', 'assets/spritesheet/piolet.png', { frameWidth: 64, frameHeight: 80 });
+    this.load.spritesheet('mia_mort', 'assets/spritesheet/mia_mort.png', { frameWidth: 64, frameHeight: 80 });
+    this.load.spritesheet('drapeau', 'assets/spritesheet/drapeau.png', { frameWidth: 320, frameHeight: 320 });
+    this.load.image("particule","assets/spritesheet/particule.png");
+    
+    this.load.image("batterie","assets/item/batterie.png");
     
     this.load.image("clouds-white", "assets/clouds-white.png");
     this.load.image("clouds-white-small", "assets/clouds-white-small.png");
@@ -117,8 +114,11 @@ function preload (){
 }
 
 function create (){
-        
-    this.add  
+    
+    pvText = this.add.text(160, 16, 'PV: ' + pv, { fontSize: '40px', fill: '#022484' }).setDepth(1).setScrollFactor(0);
+    
+    this.add.image(200,80,'bare_de_vie_1_pv').setDepth(1).setScrollFactor(0);   
+    /*this.add  
     .text(100, 200, "Arrow keys or WASD to move & jump", {
         font: "18px monospace",
         fill: "#000000",
@@ -126,7 +126,7 @@ function create (){
         backgroundColor: "#ffffff"
       })
     .setDepth(1)
-      .setScrollFactor(0);
+      .setScrollFactor(0);*/
 
     // background /////////////////////
     
@@ -149,24 +149,29 @@ function create (){
     pique_bas = map.createDynamicLayer('pique_bas',tileset, 0, 0);
     platforms = map.createDynamicLayer('roche',tileset, 0, 0);
     glace = map.createDynamicLayer('glace',tileset, 0, 0);
+    neige_couche = map.createDynamicLayer('neige_couche',tileset, 0, 0);
     neige = map.createDynamicLayer('neige',tileset, 0, 0);
     platforms_escalade = map.createDynamicLayer('escalade',tileset, 0, 0);
     drapeau = map.createDynamicLayer('drapeau',tileset, 0, 0);
+    zone_fin = map.createDynamicLayer('zone_fin',tileset, 0, 0);
     
     pique_haut.setCollisionByExclusion(-1,true)
     pique_bas.setCollisionByExclusion(-1,true)
     platforms.setCollisionByExclusion(-1,true)
     glace.setCollisionByExclusion(-1,true)
     neige.setCollisionByExclusion(-1,true)
+    //neige_couche.setCollisionByExclusion(-1,true)
     platforms_escalade.setCollisionByExclusion(-1,true)
+    zone_fin.setCollisionByExclusion(-1,true)
 
     
     pique_haut.setCollisionByProperty({ collides: true });
     pique_bas.setCollisionByProperty({ collides: true });
     platforms.setCollisionByProperty({ collides: false });
     glace.setCollisionByProperty({ collides: true });
-    neige.setCollisionByProperty({ collides: true });
+    //neige_couche.setCollisionByProperty({ collides: true });
     platforms_escalade.setCollisionByProperty({ collides: true });
+    zone_fin.setCollisionByProperty({ collides: true });
     
     
     /////////////////////////////////
@@ -185,8 +190,10 @@ function create (){
     this.physics.add.collider(player, pique_bas, verif_pique_bas);
     this.physics.add.collider(player, platforms, verif_roche);
     this.physics.add.collider(player, glace, verif_glace);
+    this.physics.add.collider(player, neige, verif_neige);
     //this.physics.add.overlap(player, neige, verif_neige);
     this.physics.add.collider(player, platforms_escalade, verif_escalade);
+    this.physics.add.collider(player, zone_fin, verif_fin);
     
     /////////////////////////////////
     // anime joueur /////////////////
@@ -245,6 +252,11 @@ function create (){
         frameRate: 8,
         repeat: -1
     });
+    this.anims.create({
+        key: 'mort_pique_bas',
+        frames: [ { key: 'mia_mort', frame: 11 } ],
+        frameRate: 10,
+    });
     
     this.anims.create({
         key: 'mort',
@@ -265,13 +277,13 @@ function create (){
     
     this.drapeau = this.physics.add.group()
     
-   /* drapeau.forEachTile(tile=>{
+    /*drapeau.forEachTile(tile=>{
         if(tile.index !== -1){
             let vardrapeau
             const x = tile.getCenterX()
             const y = tile.getCenterY()
             if (tile.properties.lampe === 'drapeau'){
-                vardrapeau = this.drapeau.create(x,y, 'coin')
+                vardrapeau = this.drapeau.create(x,y, 'drapeau')
                 vardrapeau.body.allowGravity = false;
                 vardrapeau.anims.play('drapeau',true)
             }
@@ -315,7 +327,7 @@ function create (){
         enemie.isDed = false;
 }  
    this.physics.add.collider(player, this.enemies)
-   this.physics.add.collider(this.enemies, platforms,);
+   this.physics.add.collider(this.enemies, platforms);
     
 
     // controle /////////////////////
@@ -338,37 +350,37 @@ function create (){
     //camera /////////////////////
     this.cameras.main.startFollow(player);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-        
-    //item /////////////////////
     
-    affiche_coeur_aquit_1 = this.physics.add.staticGroup({
-        key:'coeur_aquit',
-        repeat:1,
-        setXY: { x:coeurX, y:coeurY}
-    });
-    affiche_coeur_aquit_2 = this.physics.add.staticGroup({
-        key:'coeur_aquit',
-        repeat:1,
-        setXY: { x:coeurX+50, y:coeurY}
-    });
-    affiche_coeur_aquit_3 = this.physics.add.staticGroup({
-        key:'coeur_aquit',
-        repeat:1,
-        setXY: { x:coeurX+100, y:coeurY}
-    });
+      ///////////////////////////   
+     // item ///////////////////
+    ///////////////////////////
     
-    this.add.image(130, 80, 'coeur_perdu');
-    this.add.image(180, 80, 'coeur_perdu');
+    batterieObjects = map.getObjectLayer('batterie').objects;
+    this.batterie = this.physics.add.group({
+         allowGravity: true
+     }); 
     
-    coeur = this.physics.add.group({
-        key: 'coeur',
+    for (const batterie of batterieObjects) {
+
+        this.batterie.create(batterie.x, batterie.y, 'batterie')
+            .setOrigin(0.5,0.5)
+            .setDepth(1)
+            .setScale(1)
+            .setGravityY(300)
+    }
+    
+    this.physics.add.collider(player, this.batterie, collectBatterie)
+    this.physics.add.collider(this.batterie, platforms);
+    
+    /*coeur = this.physics.add.group({
+        key: 'batterie',
         repeat: 1,
         setXY: { x: 300, y: 0}
     });
         
     this.physics.add.collider(coeur, platforms);
     this.physics.add.overlap(player, coeur, collectCoeur,afficheCoeur, null, this);
-    pvText = this.add.text(16, 16, 'Pv: ' + pv, { fontSize: '32px', fill: '#000' });
+    pvText = this.add.text(16, 16, 'Pv: ' + pv, { fontSize: '32px', fill: '#000' });*/
     
 
 }
@@ -635,13 +647,13 @@ function update (){
     
     if (gameOver){
         
-        gameOvertext = this.add.text(1280/2, 700/2, 'Game over', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);;
+        gameOvertext = this.add.text(1280/2, 700/2, 'Game over', { fontSize: '32px', fill: '#E13232' }).setScrollFactor(0);
         
         if (pique_bas == true) {
             player.setVelocityY(600);
             player.setVelocityX(0);
             
-            player.anims.play('right', true);
+            player.anims.play('mort_pique_bas', true);
         }
         else if (pique_haut == true) {
             
@@ -666,10 +678,19 @@ function update (){
         else if (gouffre == true) {
 
             player.setVelocityX(0);
+            player.setVelocityY(0);
             player.anims.play('saut_gauche');
         }
     }
-    
+    if (fin){
+        gameOvertext = this.add.text(1280/2, 700/2, 'VICTOIRE', { fontSize: '32px', fill: '#48E14E' }).setScrollFactor(0);
+        
+        player.setVelocityX(0);
+        player.setVelocityY(0);
+        
+        player.anims.play('mort');
+    }
+
     /////////////////////////////
     // ennemie//////////////////
     ///////////////////////////
@@ -684,11 +705,11 @@ function update (){
         }
 
         if (enemie.direction === 'RIGHT') {
-            enemie.setVelocityX(100);
+            enemie.setVelocityX(300);
             enemie.setFlipX(true);
             enemie.anims.play("loup", true);
         } else {
-            enemie.setVelocityX(-100);
+            enemie.setVelocityX(-300);
             enemie.setFlipX(false);
             enemie.anims.play("loup", true);
         }
@@ -715,7 +736,6 @@ function verif_neige (player)
     escalade_joueur = false;
     player.body.allowGravity = true;
     
-    pvText.setText('  neige ' + pv);
 }
 
 function verif_roche (player)
@@ -771,22 +791,22 @@ function verif_pique_bas (player)
 
     
 }
-
-function afficheCoeur (coeur_aquit_2,coeur_perdu,pv)
+function verif_fin (player)
 {
-    if (pv == 1){
-        coeur_aquit_2.disableBody(true);
-    }
+    fin = true;
+
+    
 }
-function collectCoeur (player, coeur)
+
+function collectBatterie (player, batterie)
 {
     if (pv<pv_max){
         //collectCoeur = true;
-        coeur.disableBody(true, true);
+        batterie.disableBody(true, true);
         
         // sinon il le compte deux fois
-        pv += 0.5;
-        pvText.setText('Pv: ' + pv);
+        pv += 1;
+        pvText.setText('PV: ' + pv);
 
     }
 

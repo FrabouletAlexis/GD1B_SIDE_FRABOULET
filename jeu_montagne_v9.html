@@ -93,6 +93,7 @@ function preload (){
     this.load.image('platform_glace', 'assets/platform_glace.png');
     this.load.image('platform_escalade', 'assets/mur_escalade.png');
     this.load.image('platform_pique', 'assets/pique.png');
+    this.load.image('bare_de_vie_1_pv', 'assets/bare_de_vie_1_pv.png');
     
     this.load.image("mia_course", "assets/teste_2.png");
     this.load.spritesheet('mia_anime', 'assets/mia_anime.png', { frameWidth: 125, frameHeight: 150 });
@@ -113,8 +114,8 @@ function preload (){
 }
 
 function create (){
-        
-    this.add  
+    this.add.image(100,200,'bare_de_vie_1_pv').setDepth(1).setScrollFactor(0);     
+    /*this.add  
     .text(100, 200, "Arrow keys or WASD to move & jump", {
         font: "18px monospace",
         fill: "#000000",
@@ -122,7 +123,7 @@ function create (){
         backgroundColor: "#ffffff"
       })
     .setDepth(1)
-      .setScrollFactor(0);
+      .setScrollFactor(0);*/
 
     // background /////////////////////
     
