@@ -46,43 +46,38 @@ var onGround ;
 var position_base = true;
 var saut = false;
     
-// platform
+// état joueur
+    
 var glace = false;
 var neige = false;
 var roche = true;
 var escalade_joueur = false;
-
+var degat = false;
 var particule_escalade;
-
+var escalade_joueur = false;
 var pique_bas = false;
 var pique_haut = false;
 var gouffre = false;
-var fin = false;   
+var fin = false;
+var gameOver = false;
+var gameOvertext;   
 //vie
 var pv_max = 3;
 var pv = 1;
 var coeur;
 var pvText;
+var timedEvent;
+
+var recupPiolet = true;
 // vitesse joueur/////////////////
 var vitesse_joueur = 330;
 var vitesse_neige = 150;
 var vitesse_glace = 200;
 var vitesse_escalade = 300;
 var vitesse_saut = 700;
-
+var gravite_joueur = 400;
 var attaque = false;
-    
-var gameOver = false;
-var gameOvertext;
-    
-var escalade_joueur = false;
-var piolet = true;
-var gravite_joueur = 600;
 
-
-//var collectCoeur = false;    
-var coeurX = 80;
-var coeurY = 80;
     
 var game = new Phaser.Game(config);
          
@@ -100,6 +95,7 @@ function preload (){
     this.load.spritesheet('piolet', 'assets/spritesheet/piolet.png', { frameWidth: 64, frameHeight: 80 });
     this.load.spritesheet('mia_mort', 'assets/spritesheet/mia_mort.png', { frameWidth: 64, frameHeight: 80 });
     this.load.spritesheet('drapeau', 'assets/spritesheet/drapeau.png', { frameWidth: 320, frameHeight: 320 });
+    this.load.spritesheet('drapeauEscalade', 'assets/spritesheet/drapeau_escalade.png', { frameWidth: 100, frameHeight: 56 });
     this.load.image("particule","assets/spritesheet/particule.png");
     
     this.load.image("batterie","assets/item/batterie.png");
@@ -152,8 +148,9 @@ function create (){
     neige_couche = map.createDynamicLayer('neige_couche',tileset, 0, 0);
     neige = map.createDynamicLayer('neige',tileset, 0, 0);
     platforms_escalade = map.createDynamicLayer('escalade',tileset, 0, 0);
-    drapeau = map.createDynamicLayer('drapeau',tileset, 0, 0);
+    //drapeau = map.createDynamicLayer('drapeau',tileset, 0, 0);
     zone_fin = map.createDynamicLayer('zone_fin',tileset, 0, 0);
+    gouffre = map.createDynamicLayer('gouffre',tileset, 0, 0);
     
     pique_haut.setCollisionByExclusion(-1,true)
     pique_bas.setCollisionByExclusion(-1,true)
@@ -163,6 +160,7 @@ function create (){
     //neige_couche.setCollisionByExclusion(-1,true)
     platforms_escalade.setCollisionByExclusion(-1,true)
     zone_fin.setCollisionByExclusion(-1,true)
+    gouffre.setCollisionByExclusion(-1,true)
 
     
     pique_haut.setCollisionByProperty({ collides: true });
@@ -172,13 +170,14 @@ function create (){
     //neige_couche.setCollisionByProperty({ collides: true });
     platforms_escalade.setCollisionByProperty({ collides: true });
     zone_fin.setCollisionByProperty({ collides: true });
+    gouffre.setCollisionByProperty({ collides: true });
     
     
     /////////////////////////////////
     // Caratéristique joueur ////////
     /////////////////////////////////
     
-    player = this.physics.add.sprite(1000, 900, 'mia_pose');
+    player = this.physics.add.sprite(9000, 100, 'mia_pose');
     
     player.body.setGravityY(gravite_joueur)
     
@@ -187,6 +186,7 @@ function create (){
     
     //this.physics.add.overlap(player, pique_haut, verif_pique_haut);
     this.physics.add.collider(player, pique_haut, verif_pique_haut);
+    this.physics.add.collider(player, gouffre, verif_gouffre);
     this.physics.add.collider(player, pique_bas, verif_pique_bas);
     this.physics.add.collider(player, platforms, verif_roche);
     this.physics.add.collider(player, glace, verif_glace);
@@ -269,38 +269,67 @@ function create (){
     ///////////////////////////
     
     this.anims.create({
-        key: 'drapeau',
+        key: 'animeDrapeau',
         frames: this.anims.generateFrameNumbers('drapeau', { start: 0, end: 5 }),
         frameRate: 10,
         repeat: -1
     });
     
-    this.drapeau = this.physics.add.group()
+    drapeauObjects = map.getObjectLayer('drapeau').objects;
+    this.drapeau = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const drapeau of drapeauObjects) {
+
+        this.drapeau.create(drapeau.x, drapeau.y, 'drapeau')
+            .setOrigin(0.5,0.5)
+            .setScale(1)
+    }
+    ////////////////////////////
+    // Drapeau Escalade ///////
+    ///////////////////////////
     
-    /*drapeau.forEachTile(tile=>{
-        if(tile.index !== -1){
-            let vardrapeau
-            const x = tile.getCenterX()
-            const y = tile.getCenterY()
-            if (tile.properties.lampe === 'drapeau'){
-                vardrapeau = this.drapeau.create(x,y, 'drapeau')
-                vardrapeau.body.allowGravity = false;
-                vardrapeau.anims.play('drapeau',true)
-            }
-            vardrapeau.body.width = 16
-            vardrapeau.body.height = 16
-        }*/
+    this.anims.create({
+        key: 'drapeauEscalade',
+        frames: this.anims.generateFrameNumbers('drapeauEscalade', { start: 0, end: 10 }),
+        frameRate: 10,
+        repeat: -1
+    });
     
+    drapeauEscaladeObjects = map.getObjectLayer('drapeauEscalade').objects;
+    this.drapeauEscalade = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const drapeauEscalade of drapeauEscaladeObjects) {
+
+        this.drapeauEscalade.create(drapeauEscalade.x, drapeauEscalade.y, 'drapeauEscalade').setDepth(1)
+    }
+    this.physics.add.overlap(player, this.drapeauEscalade, stopEscalade)
     
-    // anime Power-up//////////////////
+    //////////////////////////////////
+    // ITEM PIOLET //////////////////
+    ////////////////////////////////
+    
     this.anims.create({
         key: 'piolet',
         frames: this.anims.generateFrameNumbers('piolet', { start: 0, end: 5 }),
-        frameRate: 7,
+        frameRate: 8,
         repeat: -1
     });
+    
+    pioletObjects = map.getObjectLayer('piolet').objects;
+    this.piolet = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const piolet of pioletObjects) {
+
+        this.piolet.create(piolet.x, piolet.y, 'piolet')
+    }
+    
+    this.physics.add.collider(player, this.piolet, collectPiolet)
+    
     //////////////////////////////////
-    // anime enemie//////////////////
+    // ENEMIES //////////////////////
     ////////////////////////////////
     
     this.anims.create({
@@ -323,11 +352,10 @@ function create (){
             .setScale(1)
             .setGravityY(300)
 }
-    for (const enemie of this.enemies.children.entries) {
-        enemie.isDed = false;
-}  
-   this.physics.add.collider(player, this.enemies)
-   this.physics.add.collider(this.enemies, platforms);
+
+    this.physics.add.collider(player, this.enemies, degatLoup)
+    //this.physics.add.collider(player, this.enemies, mortLoup)
+    this.physics.add.collider(this.enemies, platforms);
     
 
     // controle /////////////////////
@@ -352,7 +380,7 @@ function create (){
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     
       ///////////////////////////   
-     // item ///////////////////
+     // item soin batterie//////
     ///////////////////////////
     
     batterieObjects = map.getObjectLayer('batterie').objects;
@@ -385,6 +413,7 @@ function create (){
 
 }
 
+    
 function update (){
     
     onGround = player.body.blocked.down;
@@ -399,63 +428,65 @@ function update (){
     
     if (cursors.left.isDown || cursors2.Q.isDown)
     {   
-        position_base = false;
-        
-        if (glace == true){
+        if (gameOver == false){
             
-            player.setAccelerationX(-500);
-            player.body.acceleration.setToPolar(player.rotation, -vitesse_glace,10);
-            //player.anims.play('left', true);
-        }
-        else if (roche == true) {
-            player.body.acceleration.setToPolar(player.rotation, -0);
-            player.setVelocityX(-vitesse_joueur);
-            //player.anims.play('left', true);
-        }
-        
-        else if (neige == true) {
-            player.setVelocityX(-vitesse_neige);
-            //player.anims.play('left', true);
-        }
-        
-        else if (escalade_joueur == true){
-                
-                player.setVelocityY(-vitesse_escalade);
-                player.setVelocityX(-vitesse_escalade);
+            position_base = false;
 
+            if (glace == true){
+
+                player.setAccelerationX(-500);
+                player.body.acceleration.setToPolar(player.rotation, -vitesse_glace,10);
+                //player.anims.play('left', true);
+            }
+            else if (roche == true) {
+                player.body.acceleration.setToPolar(player.rotation, -0);
+                player.setVelocityX(-vitesse_joueur);
+                //player.anims.play('left', true);
+            }
+
+            else if (neige == true) {
+                player.setVelocityX(-vitesse_neige);
+                //player.anims.play('left', true);
+            }
+
+            else if (escalade_joueur == true){
+
+                    player.setVelocityY(-vitesse_escalade);
+                    player.setVelocityX(-vitesse_escalade);
+
+            }
         }
-
-
         
     }
     else if (cursors.right.isDown || cursors2.D.isDown)
     {
-        position_base = true;
-        
-        
-        if (glace == true){
-            player.setAccelerationX(500);
-            player.body.acceleration.setToPolar(player.rotation, vitesse_glace,10);
-            //player.anims.play('right', true);
-        }
-        else if (roche == true) {
-            player.body.acceleration.setToPolar(player.rotation, 0);
-            player.setVelocityX(vitesse_joueur);
-            //player.anims.play('right', true);
-        }
-        
-        else if (neige == true) {
-            player.setVelocityX(vitesse_neige);
-            //player.anims.play('right', true);
-        }  
-        
-        else if (escalade_joueur == true){
-                
-                player.setVelocityY(-vitesse_escalade);
-                player.setVelocityX(vitesse_escalade);
+        if (gameOver == false){
+            position_base = true;
 
+
+            if (glace == true){
+                player.setAccelerationX(500);
+                player.body.acceleration.setToPolar(player.rotation, vitesse_glace,10);
+                //player.anims.play('right', true);
+            }
+            else if (roche == true) {
+                player.body.acceleration.setToPolar(player.rotation, 0);
+                player.setVelocityX(vitesse_joueur);
+                //player.anims.play('right', true);
+            }
+
+            else if (neige == true) {
+                player.setVelocityX(vitesse_neige);
+                //player.anims.play('right', true);
+            }  
+
+            else if (escalade_joueur == true){
+
+                    player.setVelocityY(-vitesse_escalade);
+                    player.setVelocityX(vitesse_escalade);
+
+            }
         }
-        
         
     }
     else if (cursors.down.isDown || cursors2.S.isDown){//direction vers le bas /////////////////////
@@ -654,11 +685,13 @@ function update (){
             player.setVelocityX(0);
             
             player.anims.play('mort_pique_bas', true);
+            pvText.setText('PV: ' + pv);
         }
         else if (pique_haut == true) {
             
             player.setVelocityY(-600);
             player.setVelocityX(0);
+            pvText.setText('PV: ' + pv);
             
             if (position_base == true){
                 if (player.body.velocity.y < 0){
@@ -679,7 +712,8 @@ function update (){
 
             player.setVelocityX(0);
             player.setVelocityY(0);
-            player.anims.play('saut_gauche');
+            player.anims.play('mort_pique_bas');
+            pvText.setText('PV: ' + pv); 
         }
     }
     if (fin){
@@ -688,7 +722,7 @@ function update (){
         player.setVelocityX(0);
         player.setVelocityY(0);
         
-        player.anims.play('mort');
+        //player.anims.play('mort');
     }
 
     /////////////////////////////
@@ -715,7 +749,32 @@ function update (){
         }
        
     }
+    if (degat){
+        player.anims.play('degat');
+    }
     
+    /////////////////////////////
+    // anime drapeau ///////////
+    ///////////////////////////
+    
+    for (const drapeau of this.drapeau.children.entries) {
+        drapeau.anims.play("animeDrapeau", true);
+        }
+    
+    /////////////////////////////
+    // anime drapeau escalade ///////////
+    ///////////////////////////
+    
+    for (const drapeauEscalade of this.drapeauEscalade.children.entries) {
+        drapeauEscalade.anims.play("drapeauEscalade", true);
+        }
+    /////////////////////////////
+    // anime PIOLET ///////////
+    ///////////////////////////
+    
+    for (const piolet of this.piolet.children.entries) {
+        piolet.anims.play("piolet", true);
+        }
 }
 
 function verif_glace (player)
@@ -755,18 +814,20 @@ function verif_escalade (player)
     neige = false;
     roche = false;
     
-    if (piolet == true){
+    if (recupPiolet == true){
 
         escalade_joueur = true;
-    }
-
-
-        
+    }     
 }
 
+function stopEscalade (player)
+{
+    escalade_joueur = false;
+    roche = true;
+}
 function verif_gouffre (player)
 {
-    
+    pv = 0;
     gouffre = true;
     
     gameOver = true;
@@ -776,6 +837,7 @@ function verif_gouffre (player)
     
 function verif_pique_haut (player)
 {
+    pv = 0;
     pique_haut = true;
     
     gameOver = true;
@@ -785,17 +847,14 @@ function verif_pique_haut (player)
 
 function verif_pique_bas (player)
 {
+    pv = 0;
     pique_bas = true;
     
     gameOver = true;
-
-    
 }
 function verif_fin (player)
 {
     fin = true;
-
-    
 }
 
 function collectBatterie (player, batterie)
@@ -807,9 +866,47 @@ function collectBatterie (player, batterie)
         // sinon il le compte deux fois
         pv += 1;
         pvText.setText('PV: ' + pv);
+        
+    }
+}
+function collectPiolet (player, piolet)
+{
+    recupPiolet = true;
+    piolet.disableBody(true, true);
+    
+}
 
+function degatLoup (player, enemie)
+{   
+    if (attaque == true){
+        enemie.disableBody(true, true);
+    } else {
+        degat = true;
+        pv -= 1;
+        invicibile = true;
+        //timedEvent = this.time.addEvent({ delay: 10000, onEvent});
+        pvText.setText('PV: ' + pv);
     }
 
+}
+/*function mortLoup (player, loup)
+{   
+    if (attaque){
+        enemie.disableBody(true, true);
+    }
+
+}*/ 
+function onEvent (){
+    degat = true;
+    if(invincible == true){
+        compteur-- ;
+        if(compteur == 0){
+            compteur = 60;
+            player.setTint(0xffffff);
+            invincible = false ;
+            degat = true;
+        }
+    }
 }
 </script>
 
