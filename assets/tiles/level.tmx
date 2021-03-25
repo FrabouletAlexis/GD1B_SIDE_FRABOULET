@@ -4943,9 +4943,6 @@
 </data>
  </layer>
  <objectgroup id="16" name="drapeau" locked="1">
-  <object id="29" x="1381.33" y="925.333">
-   <point/>
-  </object>
   <object id="30" x="9016.67" y="576">
    <point/>
   </object>
@@ -4966,9 +4963,6 @@
   <object id="19" x="6407" y="1462">
    <point/>
   </object>
-  <object id="20" x="1251" y="631">
-   <point/>
-  </object>
  </objectgroup>
  <objectgroup id="14" name="batterie" locked="1">
   <object id="23" x="4008" y="4472">
@@ -4983,15 +4977,9 @@
   <object id="26" x="456" y="3200">
    <point/>
   </object>
-  <object id="28" x="774" y="934">
-   <point/>
-  </object>
  </objectgroup>
  <objectgroup id="15" name="piolet" locked="1">
   <object id="21" x="8500" y="4506.67">
-   <point/>
-  </object>
-  <object id="31" x="1281.33" y="1017.33">
    <point/>
   </object>
  </objectgroup>
