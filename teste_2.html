@@ -60,7 +60,10 @@ var pique_haut = false;
 var gouffre = false;
 var fin = false;
 var gameOver = false;
-var gameOvertext;   
+var gameOvertext;
+var invincible  =  false  ;
+var compteur = 60;
+    
 //vie
 var pv_max = 3;
 var pv = pv_max;
@@ -79,15 +82,27 @@ var gravite_joueur = 400;
 var attaque = false;
 var vitesseAttaque = 600;
 
-    
+// texte tuto //////
+
+var tutoDeplacement;
+var textAttaque;
+var textPiolet;
+
 var game = new Phaser.Game(config);
          
 function preload (){
         
     this.load.image('sky', 'assets/landscape.png');
 
-    
+    this.load.image('bare_de_vie_0_pv', 'assets/barre_de_vie/bare_de_vie_0_pv.png');
     this.load.image('bare_de_vie_1_pv', 'assets/barre_de_vie/bare_de_vie_1_pv.png');
+    this.load.image('bare_de_vie_2_pv', 'assets/barre_de_vie/bare_de_vie_2_pv.png');
+    this.load.image('bare_de_vie_3_pv', 'assets/barre_de_vie/bare_de_vie_3_pv.png');
+    
+    this.load.image('deplacement', 'assets/tuto/tuto_deplacement.png');
+    this.load.image('saut', 'assets/tuto/tuto_saut.png');
+    this.load.image('attaque', 'assets/tuto/tuto_attaque.png');
+    this.load.image('tuto_piolet', 'assets/tuto/tuto_piolet.png');
     
     this.load.spritesheet('mia_anime', 'assets/spritesheet/mia_anime.png', { frameWidth: 125, frameHeight: 150 });
     this.load.spritesheet('loup_anims', 'assets/spritesheet/loup_anims.png', { frameWidth: 138, frameHeight: 70 });
@@ -112,9 +127,9 @@ function preload (){
 
 function create (){
     
-    pvText = this.add.text(160, 16, 'PV: ' + pv, { fontSize: '40px', fill: '#022484' }).setDepth(1).setScrollFactor(0);
-    
-    this.add.image(200,80,'bare_de_vie_1_pv').setDepth(1).setScrollFactor(0);   
+    //pvText = this.add.text(160, 16, 'PV: ' + pv, { fontSize: '40px', fill: '#022484' }).setDepth(1).setScrollFactor(0);
+    //barreVie = this.add.image(200,80,'bare_de_vie_1_pv').setDepth(3).setScrollFactor(0);
+    //this.add.image(200,80,'bare_de_vie_1_pv').setDepth(1).setScrollFactor(0);   
     /*this.add  
     .text(100, 200, "Arrow keys or WASD to move & jump", {
         font: "18px monospace",
@@ -147,7 +162,7 @@ function create (){
     pique_bas = map.createDynamicLayer('pique_bas',tileset, 0, 0);
     platforms = map.createDynamicLayer('roche',tileset, 0, 0);
     glace = map.createDynamicLayer('glace',tileset, 0, 0);
-    neige_couche = map.createDynamicLayer('neige_couche',tileset, 0, 0);
+    neige_couche = map.createDynamicLayer('neige_couche',tileset, 0, 0).setDepth(1);
     neige = map.createDynamicLayer('neige',tileset, 0, 0);
     platforms_escalade = map.createDynamicLayer('escalade',tileset, 0, 0);
     //drapeau = map.createDynamicLayer('drapeau',tileset, 0, 0);
@@ -174,6 +189,48 @@ function create (){
     platforms_escalade.setCollisionByProperty({ collides: true });
     zone_fin.setCollisionByProperty({ collides: true });
     gouffre.setCollisionByProperty({ collides: true });
+    
+      //////////////////////////   
+     // TEXT TUTO //////////////
+    ///////////////////////////
+    
+    textDeplacementObjetcts = map.getObjectLayer('tuto_deplacement').objects;
+    this.textDeplacement = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const textDeplacement of textDeplacementObjetcts) {
+        
+        this.textDeplacement.create(textDeplacement.x, textDeplacement.y, 'deplacement')
+        
+    }
+    textSautObjetcts = map.getObjectLayer('tuto_saut').objects;
+    this.textSaut = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const textSaut of textSautObjetcts) {
+        
+        this.textSaut.create(textSaut.x, textSaut.y, 'saut')
+        
+    }
+    textAttaqueObjetcts = map.getObjectLayer('tuto_attaque').objects;
+    this.textAttaque = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const textAttaque of textAttaqueObjetcts) {
+        
+        this.textAttaque.create(textAttaque.x, textAttaque.y, 'attaque')
+        
+    }
+    
+    textPioletObjetcts = map.getObjectLayer('tuto_piolet').objects;
+    this.textPiolet = this.physics.add.group({
+         allowGravity: false
+     }); 
+    for (const textPiolet of textPioletObjetcts ) {
+        
+        this.textPiolet.create(textPiolet.x, textPiolet.y, 'tuto_piolet')
+        
+    }
     
     /////////////////////////////////
     // Caratéristique joueur ////////
@@ -290,6 +347,7 @@ function create (){
             .setOrigin(0.5,0.5)
             .setScale(1)
     }
+    
     ////////////////////////////
     // Drapeau Escalade ///////
     ///////////////////////////
@@ -358,7 +416,7 @@ function create (){
             .setGravityY(300)
 }
 
-    this.physics.add.collider(player, this.enemies, degatLoup)
+    this.physics.world.addCollider(player, this.enemies, degatLoup, null, this)
     //this.physics.add.collider(player, this.enemies, mortLoup)
     this.physics.add.collider(this.enemies, platforms);
     
@@ -414,6 +472,8 @@ function create (){
     this.physics.add.collider(coeur, platforms);
     this.physics.add.overlap(player, coeur, collectCoeur,afficheCoeur, null, this);
     pvText = this.add.text(16, 16, 'Pv: ' + pv, { fontSize: '32px', fill: '#000' });*/
+     
+      
     
 
 }
@@ -429,7 +489,6 @@ function update (){
     cloudsWhite.tilePositionX += 0.25;
     cloudsWhiteSmall.tilePositionX += 0.10;
     
-
     //controle clavier/////////////////////
     
     if (cursors.left.isDown || cursors2.Q.isDown)
@@ -713,13 +772,53 @@ function update (){
         
     }
     
+    ////////Invincibilité///////////////////////////
+    
+    if(invincible == true){
+        compteur-- ;
+        if(compteur == 0){
+            compteur = 60;
+            player.setTint(0xffffff);
+            invincible = false ;
+        }
+    }
+    
+    if(pv === 3)
+    {
+        Vie3 = this.add.image(200,80,'bare_de_vie_3_pv') 
+            .setDepth(1)
+            .setScrollFactor(0);
+    }
+    
+    if (pv === 2){
 
-    if (pv == 0){
+        Vie3.destroy();
+        
+        vie2 = this.add.image(200,80,'bare_de_vie_2_pv') 
+            .setDepth(1)
+            .setScrollFactor(0);
+    }
+    
+    if (pv === 1){
+        
+
+        Vie1 = this.add.image(200,80,'bare_de_vie_1_pv') 
+            .setDepth(1)
+            .setScrollFactor(0);
+    }
+    
+    if (pv === 0){
+        
+        Vie0 = this.add.image(200,80,'bare_de_vie_0_pv') 
+            .setDepth(1)
+            .setScrollFactor(0);
+        
         gameOver = true;
         gameOvertext = this.add.text(1280/2, 700/2, 'Game over', { fontSize: '32px', fill: '#E13232' }).setScrollFactor(0);
         player.setVelocityX(0);
         player.setVelocityY(0);
-        player.anims.play('mort');
+        //player.anims.play('mort');
+        player.anims.play('mort_pique_bas');
         
     }
     if (gameOver){
@@ -731,13 +830,13 @@ function update (){
             player.setVelocityX(0);
             
             player.anims.play('mort_pique_bas', true);
-            pvText.setText('PV: ' + pv);
+            
         }
         else if (pique_haut == true) {
             
-            player.setVelocityY(-600);
+            player.setVelocityY(-vitesse_saut);
             player.setVelocityX(0);
-            pvText.setText('PV: ' + pv);
+            
             
             if (position_base == true){
                 if (player.body.velocity.y < 0){
@@ -759,7 +858,7 @@ function update (){
             player.setVelocityX(0);
             player.setVelocityY(0);
             player.anims.play('mort_pique_bas');
-            pvText.setText('PV: ' + pv); 
+            
         }
     }
     if (fin){
@@ -824,7 +923,7 @@ function update (){
 }
 
 function verif_glace (player)
-{   degat = false;
+{   //degat = false;
     glace = true;
     neige = false;
     roche = false;
@@ -834,7 +933,7 @@ function verif_glace (player)
 }
 
 function verif_neige (player)
-{   degat = false;
+{   //degat = false;
     glace = false;
     neige = true;
     roche = false;
@@ -845,7 +944,7 @@ function verif_neige (player)
 
 function verif_roche (player)
 { if (onGround){
-        degat = false;
+        //degat = false;
         glace = false;
         neige = false;
         roche = true;
@@ -924,15 +1023,16 @@ function collectPiolet (player, piolet)
 }
 
 function degatLoup (player, enemie)
-{   
+{     
     if (attaque == true){
         enemie.disableBody(true, true);
-    } else {
-        degat = true;
-        pv -= 1;
-        invicibile = true;
-        //timedEvent = this.time.addEvent({ delay: 10000, onEvent});
-        pvText.setText('PV: ' + pv);
+    }
+
+    else if (invincible === false)
+    {
+        invincible = true;
+        pv--;
+        player.setTint(0xff0000);
     }
 
 }
