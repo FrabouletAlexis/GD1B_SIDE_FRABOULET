@@ -63,20 +63,21 @@ var gameOver = false;
 var gameOvertext;   
 //vie
 var pv_max = 3;
-var pv = 1;
+var pv = pv_max;
 var coeur;
 var pvText;
 var timedEvent;
 
-var recupPiolet = true;
+var recupPiolet = false;
 // vitesse joueur/////////////////
 var vitesse_joueur = 330;
 var vitesse_neige = 150;
 var vitesse_glace = 200;
 var vitesse_escalade = 300;
-var vitesse_saut = 700;
+var vitesse_saut = 600;
 var gravite_joueur = 400;
 var attaque = false;
+var vitesseAttaque = 600;
 
     
 var game = new Phaser.Game(config);
@@ -141,6 +142,7 @@ function create (){
     const map = this.make.tilemap({key : 'map'});
     const tileset = map.addTilesetImage('platforms','tiles');
     
+    map.createDynamicLayer('grotte',tileset, 0, 0);
     pique_haut = map.createDynamicLayer('pique_haut',tileset, 0, 0);
     pique_bas = map.createDynamicLayer('pique_bas',tileset, 0, 0);
     platforms = map.createDynamicLayer('roche',tileset, 0, 0);
@@ -151,6 +153,7 @@ function create (){
     //drapeau = map.createDynamicLayer('drapeau',tileset, 0, 0);
     zone_fin = map.createDynamicLayer('zone_fin',tileset, 0, 0);
     gouffre = map.createDynamicLayer('gouffre',tileset, 0, 0);
+    
     
     pique_haut.setCollisionByExclusion(-1,true)
     pique_bas.setCollisionByExclusion(-1,true)
@@ -172,13 +175,13 @@ function create (){
     zone_fin.setCollisionByProperty({ collides: true });
     gouffre.setCollisionByProperty({ collides: true });
     
-    
     /////////////////////////////////
     // Caratéristique joueur ////////
     /////////////////////////////////
     
     //player = this.physics.add.sprite(9000, 100, 'mia_pose');
     player = this.physics.add.sprite(500, 5000, 'mia_pose');
+    //player = this.physics.add.sprite(1000, 500, 'mia_pose');
     
     
     player.body.setGravityY(gravite_joueur)
@@ -421,6 +424,7 @@ function update (){
     onGround = player.body.blocked.down;
     onRight = player.body.blocked.right;
     onLeft = player.body.blocked.left;
+    
     // anime nuage /////////////////////
     cloudsWhite.tilePositionX += 0.25;
     cloudsWhiteSmall.tilePositionX += 0.10;
@@ -495,8 +499,9 @@ function update (){
         
         attaque = true;
         //player.body.allowGravity = true;
-        player.setVelocityY(600);
+        player.setVelocityY(vitesseAttaque);
         player.anims.play('attaque', true);
+        
     }
     
     else //position neutre /////////////////////
@@ -522,54 +527,86 @@ function update (){
     if (padConnected) {
                         
        if (paddle.left || cursors.left.isDown || cursors2.Q.isDown){
-            position_base = false;
-            escalade_gauche = true;
-        
-            if (glace == true){
             
-                player.body.acceleration.setToPolar(player.rotation, -200);
-                //player.anims.play('left', true);
-            }
-            else if (roche == true) {
-                player.body.acceleration.setToPolar(player.rotation, -0);
-                player.setVelocityX(-300);
-                //player.anims.play('left', true);
-            }
+           if (gameOver == false){
+            
+                position_base = false;
 
-            else if (neige == true) {
-                player.setVelocityX(-150);
-                //player.anims.play('left', true);
-            }
+                if (glace == true){
 
-            else if (escalade_joueur_gauche == true){
+                    player.setAccelerationX(-500);
+                    player.body.acceleration.setToPolar(player.rotation, -vitesse_glace,10);
+                    //player.anims.play('left', true);
+                }
+                else if (roche == true) {
+                    player.body.acceleration.setToPolar(player.rotation, -0);
+                    player.setVelocityX(-vitesse_joueur);
+                    //player.anims.play('left', true);
+                }
 
-                    player.setVelocityY(-300);
-                    player.setVelocityX(-300);
-                    //player.anims.play('saut_gauche');
+                else if (neige == true) {
+                    player.setVelocityX(-vitesse_neige);
+                    //player.anims.play('left', true);
+                }
+
+                else if (escalade_joueur == true){
+
+                        player.setVelocityY(-vitesse_escalade);
+                        player.setVelocityX(-vitesse_escalade);
+
+                }
             }
 
         }
                 
        else if (paddle.right || cursors.right.isDown || cursors2.D.isDown){
                
-            player.setVelocityX(160);
+            if (gameOver == false){
+                position_base = true;
+
+
+                if (glace == true){
+                    player.setAccelerationX(500);
+                    player.body.acceleration.setToPolar(player.rotation, vitesse_glace,10);
+                    //player.anims.play('right', true);
+                }
+                else if (roche == true) {
+                    player.body.acceleration.setToPolar(player.rotation, 0);
+                    player.setVelocityX(vitesse_joueur);
+                    //player.anims.play('right', true);
+                }
+
+                else if (neige == true) {
+                    player.setVelocityX(vitesse_neige);
+                    //player.anims.play('right', true);
+                }  
+
+                else if (escalade_joueur == true){
+
+                        player.setVelocityY(-vitesse_escalade);
+                        player.setVelocityX(vitesse_escalade);
+
+                }
+            }
 
         }
-
-        else{
+            
+        if (paddle.B || cursors.down.isDown || cursors2.S.isDown || paddle.down ){
+                
+            attaque = true;
+            //player.body.allowGravity = true;
+            player.setVelocityY(vitesseAttaque);
+            player.anims.play('attaque', true);
+                
+        }
+        /*else{
                 
             player.setVelocityX(0);
 
-        } 
-            
-        if (paddle.B || cursors.down.isDown || cursors2.S.isDown){
+        } */
+        if (paddle.A && onGround || cursors.up.isDown && onGround || cursors2.Z.isDown && onGround || cursors2.SPACE.isDown && onGround || paddle.up && onGround){
                 
-            player.setVelocityY(330);
-                
-        }
-        if (paddle.A && player.body.touching.down || cursors.up.isDown && player.body.touching.down || cursors2.Z.isDown && player.body.touching.down || cursors2.SPACE.isDown && player.body.touching.down){
-                
-             player.setVelocityY(-330);
+             player.setVelocityY(-vitesse_saut);
         }
     }
     
@@ -677,7 +714,14 @@ function update (){
     }
     
 
-    
+    if (pv == 0){
+        gameOver = true;
+        gameOvertext = this.add.text(1280/2, 700/2, 'Game over', { fontSize: '32px', fill: '#E13232' }).setScrollFactor(0);
+        player.setVelocityX(0);
+        player.setVelocityY(0);
+        player.anims.play('mort');
+        
+    }
     if (gameOver){
         
         gameOvertext = this.add.text(1280/2, 700/2, 'Game over', { fontSize: '32px', fill: '#E13232' }).setScrollFactor(0);
@@ -780,7 +824,7 @@ function update (){
 }
 
 function verif_glace (player)
-{
+{   degat = false;
     glace = true;
     neige = false;
     roche = false;
@@ -790,7 +834,7 @@ function verif_glace (player)
 }
 
 function verif_neige (player)
-{
+{   degat = false;
     glace = false;
     neige = true;
     roche = false;
@@ -801,6 +845,7 @@ function verif_neige (player)
 
 function verif_roche (player)
 { if (onGround){
+        degat = false;
         glace = false;
         neige = false;
         roche = true;
