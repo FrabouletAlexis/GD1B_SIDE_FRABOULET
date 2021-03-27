@@ -92,7 +92,7 @@ var game = new Phaser.Game(config);
          
 function preload (){
         
-    this.load.image('sky', 'assets/landscape.png');
+    this.load.image('sky', 'assets/background/background.png');
 
     this.load.image('bare_de_vie_0_pv', 'assets/barre_de_vie/bare_de_vie_0_pv.png');
     this.load.image('bare_de_vie_1_pv', 'assets/barre_de_vie/bare_de_vie_1_pv.png');
@@ -116,8 +116,8 @@ function preload (){
     
     this.load.image("batterie","assets/item/batterie.png");
     
-    this.load.image("clouds-white", "assets/clouds-white.png");
-    this.load.image("clouds-white-small", "assets/clouds-white-small.png");
+    this.load.image("clouds-white", "assets/background/clouds-white.png");
+    this.load.image("clouds-white-small", "assets/background/clouds-white-small.png");
     
     this.load.image('tiles','assets/tiles/platform.png');
     this.load.tilemapTiledJSON('map','assets/tiles/level.json');
@@ -142,13 +142,13 @@ function create (){
 
     // background /////////////////////
     
-    this.add.image(960, 300, 'sky');
-    this.add.image(960*2, 300, 'sky');
+    this.add.image(9622/2, 5376/2, 'sky');
+    //this.add.image(960*2, 300, 'sky');
         
     // nuage /////////////////////
     
-    cloudsWhite = this.add.tileSprite(640, 200, 1280, 400, "clouds-white");
-    cloudsWhiteSmall = this.add.tileSprite(640, 200, 1280, 400, "clouds-white-small");
+    cloudsWhite = this.add.tileSprite(9622/2, 5376/2, 9622, 5376, "clouds-white");
+    cloudsWhiteSmall = this.add.tileSprite(9622/2, 5376/2, 9622, 5376, "clouds-white-small");
     
     //////////////////////////////////           
     // platforms /////////////////////
@@ -486,8 +486,8 @@ function update (){
     onLeft = player.body.blocked.left;
     
     // anime nuage /////////////////////
-    cloudsWhite.tilePositionX += 0.25;
-    cloudsWhiteSmall.tilePositionX += 0.10;
+    cloudsWhite.tilePositionX += 0.5;
+    cloudsWhiteSmall.tilePositionX += 0.2;
     
     //controle clavier/////////////////////
     
