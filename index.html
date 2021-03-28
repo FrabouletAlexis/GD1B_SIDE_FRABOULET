@@ -63,6 +63,7 @@ var gameOver = false;
 var gameOvertext;
 var invincible  =  false  ;
 var compteur = 60;
+var recupPiolet = false;
     
 //vie
 var pv_max = 3;
@@ -70,9 +71,9 @@ var pv = pv_max;
 var coeur;
 var pvText;
 var timedEvent;
-
-var recupPiolet = false;
+    
 // vitesse joueur/////////////////
+    
 var vitesse_joueur = 330;
 var vitesse_neige = 150;
 var vitesse_glace = 200;
@@ -140,24 +141,32 @@ function create (){
       })
     .setDepth(1)
       .setScrollFactor(0);*/
-
-    // background /////////////////////
+    
+      /////////////////////////////   
+     // BACKGROUND ///////////////
+    /////////////////////////////
     
     this.add.image(9622/2, 5376/2, 'sky');
+    
+      /////////////////////////////   
+     // MENU /////////////////////
+    /////////////////////////////
     
     menu = this.add.image(640,360, 'menu')
     .setDepth(3)
     .setScrollFactor(0);
     //this.add.image(960*2, 300, 'sky');
-        
-    // nuage /////////////////////
+    
+      /////////////////////////////   
+     // NUAGE ////////////////////
+    /////////////////////////////
     
     cloudsWhite = this.add.tileSprite(9622/2, 5376/2, 9622, 5376, "clouds-white");
     cloudsWhiteSmall = this.add.tileSprite(9622/2, 5376/2, 9622, 5376, "clouds-white-small");
-    
-    //////////////////////////////////           
-    // platforms /////////////////////
-    /////////////////////////////////
+
+      /////////////////////////////   
+     // PLATFORMS ////////////////
+    /////////////////////////////
     
     const map = this.make.tilemap({key : 'map'});
     const tileset = map.addTilesetImage('platforms','tiles');
@@ -195,9 +204,9 @@ function create (){
     zone_fin.setCollisionByProperty({ collides: true });
     gouffre.setCollisionByProperty({ collides: true });
     
-      //////////////////////////   
-     // TEXT TUTO //////////////
-    ///////////////////////////
+      /////////////////////////////   
+     // TEXT TUTO ////////////////
+    /////////////////////////////   
     
     textDeplacementObjetcts = map.getObjectLayer('tuto_deplacement').objects;
     this.textDeplacement = this.physics.add.group({
@@ -237,9 +246,9 @@ function create (){
         
     }
     
-    /////////////////////////////////
-    // Caratéristique joueur ////////
-    /////////////////////////////////
+      /////////////////////////////   
+     // CARACTERISTIQUE JOUEUR ///
+    /////////////////////////////
     
     //player = this.physics.add.sprite(9000, 100, 'mia_pose');
     player = this.physics.add.sprite(500, 5000, 'mia_pose');
@@ -262,9 +271,9 @@ function create (){
     this.physics.add.collider(player, platforms_escalade, verif_escalade);
     this.physics.add.collider(player, zone_fin, verif_fin);
     
-    /////////////////////////////////
-    // anime joueur /////////////////
-    /////////////////////////////////
+      /////////////////////////////   
+     // ANIME JOUEUR /////////////
+    /////////////////////////////
     
     this.anims.create({
         key: 'course',
@@ -331,9 +340,10 @@ function create (){
         frameRate: 20,
         repeat: -1
     });
+    
+      /////////////////////////////   
+     // DRAPEAU //////////////////
     /////////////////////////////
-    // Drapeau//////////////////
-    ///////////////////////////
     
     this.anims.create({
         key: 'animeDrapeau',
@@ -353,9 +363,9 @@ function create (){
             .setScale(1)
     }
     
-    ////////////////////////////
-    // Drapeau Escalade ///////
-    ///////////////////////////
+      /////////////////////////////   
+     // DRAPEAU ESCALADE /////////
+    /////////////////////////////
     
     this.anims.create({
         key: 'drapeauEscalade',
@@ -374,9 +384,9 @@ function create (){
     }
     this.physics.add.overlap(player, this.drapeauEscalade, stopEscalade)
     
-    //////////////////////////////////
-    // ITEM PIOLET //////////////////
-    ////////////////////////////////
+      /////////////////////////////   
+     // ITEM PIOLET //////////////
+    /////////////////////////////
     
     this.anims.create({
         key: 'piolet',
@@ -396,9 +406,9 @@ function create (){
     
     this.physics.add.collider(player, this.piolet, collectPiolet)
     
-    //////////////////////////////////
-    // ENEMIES //////////////////////
-    ////////////////////////////////
+      /////////////////////////////   
+     // ENEMIES //////////////////
+    /////////////////////////////
     
     this.anims.create({
         key: 'loup',
@@ -425,12 +435,17 @@ function create (){
     //this.physics.add.collider(player, this.enemies, mortLoup)
     this.physics.add.collider(this.enemies, platforms);
     
+      /////////////////////////////   
+     // CONTROLE /////////////////
+    /////////////////////////////
 
-    // controle /////////////////////
     cursors = this.input.keyboard.createCursorKeys();
     cursors2 = this.input.keyboard.addKeys('Z,Q,S,D,SPACE'); 
-     
-    // Particule //////////////////////////////
+    
+      /////////////////////////////   
+     // PARTICULE ////////////////
+    /////////////////////////////    
+
     particule_escalade = this.add.particles('particule').createEmitter({
         x: 200,
         y: 200,
@@ -443,13 +458,16 @@ function create (){
         active: false
     });
     
-    //camera /////////////////////
+      /////////////////////////////   
+     // CAMERA ///////////////////
+    ///////////////////////////// 
+
     this.cameras.main.startFollow(player);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    
-      ///////////////////////////   
-     // item soin batterie//////
-    ///////////////////////////
+
+      /////////////////////////////   
+     // ITEM SOIN BATTERIE ///////
+    /////////////////////////////
     
     batterieObjects = map.getObjectLayer('batterie').objects;
     this.batterie = this.physics.add.group({
@@ -490,16 +508,24 @@ function update (){
     onRight = player.body.blocked.right;
     onLeft = player.body.blocked.left;
     
-    // anime nuage /////////////////////
+      /////////////////////////////   
+     // ANIME NUAGE //////////////
+    ///////////////////////////// 
+    
     cloudsWhite.tilePositionX += 0.5;
     cloudsWhiteSmall.tilePositionX += 0.2;
-    // menu ///////////////////////////////
+    
+      /////////////////////////////   
+     // CLICK MENU ///////////////
+    ///////////////////////////// 
     
     this.input.on('pointerdown', function (pointer) {
         menu.destroy();
     })
     
-    //controle clavier/////////////////////
+      /////////////////////////////   
+     // CONTROLE CLAVIER /////////
+    ///////////////////////////// 
     
     if (cursors.left.isDown || cursors2.Q.isDown)
     {   
@@ -586,7 +612,9 @@ function update (){
 
      }
     
-    // controle pad /////////////////////
+      /////////////////////////////   
+     // CONTROLE PAD /////////////
+    /////////////////////////////
     
     this.input.gamepad.once('connected', function (pad) {
         paddle = pad;
@@ -678,6 +706,10 @@ function update (){
              player.setVelocityY(-vitesse_saut);
         }
     }
+
+      /////////////////////////////   
+     // VERRIF ETAT JOUEUR ///////
+    /////////////////////////////
     
     if (onGround) {
         attaque = false;
@@ -781,8 +813,9 @@ function update (){
         
         
     }
-    
-    ////////Invincibilité///////////////////////////
+      /////////////////////////////   
+     // INVINCIBILITE ////////////
+    /////////////////////////////
     
     if(invincible == true){
         compteur-- ;
@@ -792,6 +825,10 @@ function update (){
             invincible = false ;
         }
     }
+      
+      /////////////////////////////   
+     // UPDATE BARRE DE VIE //////
+    /////////////////////////////
     
     if(pv === 3)
     {
@@ -831,8 +868,9 @@ function update (){
         player.anims.play('mort_pique_bas');
         
     }
-    
-    ////////game over///////////////////////////
+      /////////////////////////////   
+     // GAME OVER ////////////////
+    /////////////////////////////
     
     if (gameOver){
         
@@ -875,6 +913,11 @@ function update (){
             
         }
     }
+    
+      /////////////////////////////   
+     // FIN DU NIVEAU ////////////
+    /////////////////////////////
+    
     if (fin){
         gameOvertext = this.add.text(1280/2, 700/2, 'VICTOIRE', { fontSize: '32px', fill: '#48E14E' }).setScrollFactor(0);
         
@@ -884,9 +927,9 @@ function update (){
         //player.anims.play('mort');
     }
 
+      /////////////////////////////   
+     // COMPORTEMENT ENNEMIE /////
     /////////////////////////////
-    // ennemie//////////////////
-    ///////////////////////////
     
     for (const enemie of this.enemies.children.entries) {
         if (enemie.body.blocked.right) {
@@ -911,25 +954,26 @@ function update (){
     if (degat){
         player.anims.play('degat');
     }
-    
+
+      /////////////////////////////   
+     // ANIME DRAPEAU ////////////
     /////////////////////////////
-    // anime drapeau ///////////
-    ///////////////////////////
     
     for (const drapeau of this.drapeau.children.entries) {
         drapeau.anims.play("animeDrapeau", true);
         }
     
+      /////////////////////////////   
+     // ANIME DRAPEAU ESCALADE ///
     /////////////////////////////
-    // anime drapeau escalade ///////////
-    ///////////////////////////
     
     for (const drapeauEscalade of this.drapeauEscalade.children.entries) {
         drapeauEscalade.anims.play("drapeauEscalade", true);
         }
+    
+      /////////////////////////////   
+     // ANIME PIOLET /////////////
     /////////////////////////////
-    // anime PIOLET ///////////
-    ///////////////////////////
     
     for (const piolet of this.piolet.children.entries) {
         piolet.anims.play("piolet", true);
